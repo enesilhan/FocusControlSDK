@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import UIKit
+import SwiftUI
 
 public class AppRestrictionHandler: RestrictionHandling {
     private var onSwitch: (() -> Void)?
@@ -15,20 +15,33 @@ public class AppRestrictionHandler: RestrictionHandling {
     
     public func monitorAppSwitch(restrictedApps: [String], onSwitch: @escaping () -> Void) {
         self.onSwitch = onSwitch
+        
+        #if os(iOS) || targetEnvironment(macCatalyst)
+        // Yalnızca iOS (ve macCatalyst) tarafında kullanılabilen UIApplication API'si
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(appDidSwitch),
             name: UIApplication.willResignActiveNotification,
             object: nil
         )
+        #elseif os(macOS)
+        // macOS tarafında farklı bir yaklaşım kullanabilirsiniz (örnek: NSApplication, NSWorkspace notifications)
+        // Şimdilik no-op (boş) bırakalım
+        #elseif os(watchOS)
+        // watchOS tarafında UIApplication yok, watchOS'ta no-op
+        #endif
     }
     
-    public func stopMonitoring() {
-        NotificationCenter.default.removeObserver(self)
-        onSwitch = nil
-    }
-    
+    #if os(iOS) || targetEnvironment(macCatalyst)
     @objc private func appDidSwitch() {
         onSwitch?()
+    }
+    #endif
+    
+    public func stopMonitoring() {
+        #if os(iOS) || targetEnvironment(macCatalyst)
+        NotificationCenter.default.removeObserver(self)
+        #endif
+        onSwitch = nil
     }
 }
